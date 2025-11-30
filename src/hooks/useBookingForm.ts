@@ -128,6 +128,7 @@ export const useBookingForm = () => {
         'Submission Failed',
         error.message || 'Could not create booking. Please check for time conflicts.'
       );
+
     } finally {
       setLoading(false);
     }

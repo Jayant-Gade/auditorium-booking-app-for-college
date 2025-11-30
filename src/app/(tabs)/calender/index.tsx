@@ -21,6 +21,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchCalendarBookings } from "@/store/bookingSlice";
 import { RootState, Booking } from "@/lib/types";
 import { theme } from "@/lib/theme";
+import { router } from "expo-router";
 
 export default function CalendarScreen() {
   const dispatch = useAppDispatch();
@@ -212,7 +213,17 @@ export default function CalendarScreen() {
           </Card>
         ) : (
           selectedDayBookings.map((booking: Booking) => (
-            <Card key={booking._id} style={styles.bookingCard}>
+            <Card
+              key={booking._id}
+              style={styles.bookingCard}
+              // 2. Added onPress navigation
+              onPress={() =>
+                router.push({
+                  pathname: "/booking-details",
+                  params: { booking: JSON.stringify(booking) },
+                })
+              }
+            >
               <Card.Content>
                 <View style={styles.bookingRow}>
                   <View style={styles.timeContainer}>

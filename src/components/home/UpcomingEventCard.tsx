@@ -7,6 +7,7 @@ import Icon from "@expo/vector-icons/MaterialCommunityIcons";
 // Adjust paths as needed
 import { theme } from "@/lib/theme";
 import { Booking } from "@/lib/types";
+import { router } from "expo-router";
 
 interface UpcomingEventCardProps {
   booking: Booking;
@@ -16,7 +17,15 @@ export const UpcomingEventCard: React.FC<UpcomingEventCardProps> = ({
   booking,
 }) => {
   return (
-    <Card style={styles.eventCard}>
+    <Card
+      style={styles.eventCard}
+      onPress={() =>
+        router.push({
+          pathname: "/booking-details",
+          params: { booking: JSON.stringify(booking) },
+        })
+      }
+    >
       <Card.Content>
         <View style={styles.eventHeader}>
           <Text variant="titleMedium" style={styles.eventTitle}>

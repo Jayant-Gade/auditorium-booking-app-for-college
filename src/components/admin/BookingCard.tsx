@@ -7,6 +7,7 @@ import Icon from "@expo/vector-icons/MaterialCommunityIcons";
 // Assuming theme and types are accessible
 import { theme } from "@/lib/theme";
 import { Booking, BookingStatus } from "@/lib/types";
+import { router } from "expo-router";
 
 interface BookingCardProps {
   booking: Booking;
@@ -37,7 +38,16 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   const statusColors = getStatusColors(booking.status);
 
   return (
-    <Card key={booking._id} style={styles.bookingCard}>
+    <Card
+      key={booking._id}
+      style={styles.bookingCard}
+      onPress={() =>
+        router.push({
+          pathname: "/booking-details",
+          params: { booking: JSON.stringify(booking) },
+        })
+      }
+    >
       <Card.Content>
         <View style={styles.bookingHeader}>
           <Text variant="titleMedium" style={styles.bookingTitle}>
