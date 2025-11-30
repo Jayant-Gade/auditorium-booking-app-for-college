@@ -1,96 +1,147 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Booking } from './bookingSlice';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { AdminState, Booking } from '@/lib/types';
+import {
+    fetchAdminData,
+    approveBookingAPI,
+    rejectBookingAPI,
+} from '@/lib/api/adminService';
 
-interface AdminState {
-  pendingBookings: Booking[];
-  approvedBookings: Booking[];
-  rejectedBookings: Booking[];
-  conflictingBookings: { booking: Booking; conflicts: Booking[] }[];
-  statistics: {
-    totalBookings: number;
-    pendingCount: number;
-    approvedCount: number;
-    rejectedCount: number;
-    monthlyBookings: number;
-  };
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: AdminState = {
-  pendingBookings: [],
-  approvedBookings: [],
-  rejectedBookings: [],
-  conflictingBookings: [],
-  statistics: {
-    totalBookings: 0,
-    pendingCount: 0,
-    approvedCount: 0,
-    rejectedCount: 0,
-    monthlyBookings: 0,
-  },
-  loading: false,
-  error: null,
+// Type for the dashboard API response
+type AdminDashboardData = {
+    pendingBookings: Booking[];
+    approvedBookings: Booking[];
+    rejectedBookings: Booking[];
+    statistics: AdminState['statistics'];
 };
 
+// --- Asynchronous Thunks ---
+
+export const fetchAdminDashboard = createAsyncThunk(
+    'admin/fetchDashboard',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await fetchAdminData();
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const approveBooking = createAsyncThunk(
+    'admin/approveBooking',
+    async (
+        payload: { bookingId: string; adminNotes?: string },
+        { rejectWithValue }
+    ) => {
+        try {
+            // The API returns the updated booking
+            return await approveBookingAPI(payload);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const rejectBooking = createAsyncThunk(
+    'admin/rejectBooking',
+    async (
+        payload: { bookingId: string; adminNotes?: string },
+        { rejectWithValue }
+    ) => {
+        try {
+            // The API returns the updated booking
+            return await rejectBookingAPI(payload);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// --- Initial State ---
+
+const initialState: AdminState = {
+    pendingBookings: [],
+    approvedBookings: [],
+    rejectedBookings: [],
+    statistics: {
+        totalBookings: 0,
+        pendingCount: 0,
+        approvedCount: 0,
+        rejectedCount: 0,
+        monthlyBookings: 0,
+    },
+    loading: false,
+    error: null,
+};
+
+// --- Admin Slice ---
+
 const adminSlice = createSlice({
-  name: 'admin',
-  initialState,
-  reducers: {
-    setPendingBookings: (state, action: PayloadAction<Booking[]>) => {
-      state.pendingBookings = action.payload;
+    name: 'admin',
+    initialState,
+    reducers: {
+        clearError: (state) => {
+            state.error = null;
+        },
     },
-    setApprovedBookings: (state, action: PayloadAction<Booking[]>) => {
-      state.approvedBookings = action.payload;
+    extraReducers: (builder) => {
+        builder
+            // --- Fetch Admin Dashboard ---
+            .addCase(fetchAdminDashboard.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(
+                fetchAdminDashboard.fulfilled,
+                (state, action: PayloadAction<AdminDashboardData>) => {
+                    state.loading = false;
+                    state.pendingBookings = action.payload.pendingBookings;
+                    state.approvedBookings = action.payload.approvedBookings;
+                    state.rejectedBookings = action.payload.rejectedBookings;
+                    state.statistics = action.payload.statistics;
+                }
+            )
+            .addCase(fetchAdminDashboard.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+
+            // --- Approve Booking ---
+            .addCase(approveBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
+                const updatedBooking = action.payload;
+                // Remove from pending
+                state.pendingBookings = state.pendingBookings.filter(
+                    (b) => b._id !== updatedBooking._id
+                );
+                // Add to approved
+                state.approvedBookings.push(updatedBooking);
+                // Update stats (or we could refetch the dashboard)
+                state.statistics.pendingCount -= 1;
+                state.statistics.approvedCount += 1;
+            })
+            .addCase(approveBooking.rejected, (state, action) => {
+                state.error = action.payload as string;
+            })
+
+            // --- Reject Booking ---
+            .addCase(rejectBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
+                const updatedBooking = action.payload;
+                // Remove from pending
+                state.pendingBookings = state.pendingBookings.filter(
+                    (b) => b._id !== updatedBooking._id
+                );
+                // Add to rejected
+                state.rejectedBookings.push(updatedBooking);
+                // Update stats
+                state.statistics.pendingCount -= 1;
+                state.statistics.rejectedCount += 1;
+            })
+            .addCase(rejectBooking.rejected, (state, action) => {
+                state.error = action.payload as string;
+            });
     },
-    setRejectedBookings: (state, action: PayloadAction<Booking[]>) => {
-      state.rejectedBookings = action.payload;
-    },
-    setConflictingBookings: (state, action: PayloadAction<{ booking: Booking; conflicts: Booking[] }[]>) => {
-      state.conflictingBookings = action.payload;
-    },
-    approveBooking: (state, action: PayloadAction<{ id: string; adminNotes?: string }>) => {
-      const booking = state.pendingBookings.find(b => b.id === action.payload.id);
-      if (booking) {
-        booking.status = 'approved';
-        booking.adminNotes = action.payload.adminNotes;
-        booking.updatedAt = new Date().toISOString();
-        state.approvedBookings.push(booking);
-        state.pendingBookings = state.pendingBookings.filter(b => b.id !== action.payload.id);
-      }
-    },
-    rejectBooking: (state, action: PayloadAction<{ id: string; adminNotes?: string }>) => {
-      const booking = state.pendingBookings.find(b => b.id === action.payload.id);
-      if (booking) {
-        booking.status = 'rejected';
-        booking.adminNotes = action.payload.adminNotes;
-        booking.updatedAt = new Date().toISOString();
-        state.rejectedBookings.push(booking);
-        state.pendingBookings = state.pendingBookings.filter(b => b.id !== action.payload.id);
-      }
-    },
-    updateStatistics: (state, action: PayloadAction<AdminState['statistics']>) => {
-      state.statistics = action.payload;
-    },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-  },
 });
 
-export const {
-  setPendingBookings,
-  setApprovedBookings,
-  setRejectedBookings,
-  setConflictingBookings,
-  approveBooking,
-  rejectBooking,
-  updateStatistics,
-  setLoading,
-  setError,
-} = adminSlice.actions;
+export const { clearError } = adminSlice.actions;
 
 export default adminSlice.reducer;

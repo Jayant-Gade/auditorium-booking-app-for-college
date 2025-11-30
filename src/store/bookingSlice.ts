@@ -1,89 +1,155 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { Booking, BookingState, NewBookingData } from '@/lib/types';
+import {
+    fetchAllBookingsAPI,
+    fetchUserBookingsAPI,
+    createBookingAPI,
+    updateBookingAPI,
+    deleteBookingAPI,
+} from '@/lib/api/bookingService';
 
-export interface Booking {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  organizerName: string;
-  organizerEmail: string;
-  organizerPhone: string;
-  department: string;
-  expectedAttendees: number;
-  equipmentNeeded: string[];
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  adminNotes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// --- Asynchronous Thunks ---
 
-interface BookingState {
-  bookings: Booking[];
-  userBookings: Booking[];
-  selectedBooking: Booking | null;
-  loading: boolean;
-  error: string | null;
-}
+export const fetchAllBookings = createAsyncThunk(
+    'bookings/fetchAll',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await fetchAllBookingsAPI();
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const fetchUserBookings = createAsyncThunk(
+    'bookings/fetchUserBookings',
+    async (_, { rejectWithValue }) => {
+        // We don't need to pass userEmail, the backend gets it from the token
+        try {
+            return await fetchUserBookingsAPI();
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const addBooking = createAsyncThunk(
+    'bookings/addBooking',
+    async (bookingData: NewBookingData, { rejectWithValue }) => {
+        try {
+            return await createBookingAPI(bookingData);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const updateBooking = createAsyncThunk(
+    'bookings/updateBooking',
+    async (booking: Booking, { rejectWithValue }) => {
+        try {
+            // API needs the ID and the update payload separately
+            const { _id, ...updates } = booking;
+            return await updateBookingAPI(_id, updates);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const deleteBooking = createAsyncThunk(
+    'bookings/deleteBooking',
+    async (bookingId: string, { rejectWithValue }) => {
+        try {
+            await deleteBookingAPI(bookingId);
+            return bookingId; // Return the ID for removal from state
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+// --- Initial State ---
 
 const initialState: BookingState = {
-  bookings: [],
-  userBookings: [],
-  selectedBooking: null,
-  loading: false,
-  error: null,
+    bookings: [], // All bookings (for admin)
+    userBookings: [], // Bookings for the logged-in user
+    selectedBooking: null,
+    loading: false,
+    error: null,
 };
 
+// --- Booking Slice ---
+
 const bookingSlice = createSlice({
-  name: 'bookings',
-  initialState,
-  reducers: {
-    setBookings: (state, action: PayloadAction<Booking[]>) => {
-      state.bookings = action.payload;
+    name: 'bookings',
+    initialState,
+    reducers: {
+        setSelectedBooking: (state, action: PayloadAction<Booking | null>) => {
+            state.selectedBooking = action.payload;
+        },
+        clearError: (state) => {
+            state.error = null;
+        },
     },
-    addBooking: (state, action: PayloadAction<Booking>) => {
-      state.bookings.push(action.payload);
-      state.userBookings.push(action.payload);
+    extraReducers: (builder) => {
+        builder
+            // --- Fetch All Bookings ---
+            .addCase(fetchAllBookings.pending, (state) => {
+                state.loading = true; state.error = null;
+            })
+            .addCase(fetchAllBookings.fulfilled, (state, action: PayloadAction<Booking[]>) => {
+                state.loading = false;
+                state.bookings = action.payload;
+            })
+            .addCase(fetchAllBookings.rejected, (state, action) => {
+                state.loading = false; state.error = action.payload as string;
+            })
+
+            // --- Fetch User Bookings ---
+            .addCase(fetchUserBookings.pending, (state) => {
+                state.loading = true; state.error = null;
+            })
+            .addCase(fetchUserBookings.fulfilled, (state, action: PayloadAction<Booking[]>) => {
+                state.loading = false;
+                state.userBookings = action.payload;
+            })
+            .addCase(fetchUserBookings.rejected, (state, action) => {
+                state.loading = false; state.error = action.payload as string;
+            })
+
+            // --- Add Booking ---
+            .addCase(addBooking.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(addBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
+                state.loading = false;
+                state.bookings.push(action.payload); // Add to admin list
+                state.userBookings.push(action.payload); // Add to user list
+            })
+            .addCase(addBooking.rejected, (state, action) => {
+                state.loading = false; state.error = action.payload as string;
+            })
+
+            // --- Update Booking ---
+            .addCase(updateBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
+                const updatedBooking = action.payload;
+                const index = state.bookings.findIndex(b => b._id === updatedBooking._id);
+                if (index !== -1) state.bookings[index] = updatedBooking;
+
+                const userIndex = state.userBookings.findIndex(b => b._id === updatedBooking._id);
+                if (userIndex !== -1) state.userBookings[userIndex] = updatedBooking;
+            })
+
+            // --- Delete Booking ---
+            .addCase(deleteBooking.fulfilled, (state, action: PayloadAction<string>) => {
+                const bookingId = action.payload;
+                state.bookings = state.bookings.filter(b => b._id !== bookingId);
+                state.userBookings = state.userBookings.filter(b => b._id !== bookingId);
+            });
     },
-    updateBooking: (state, action: PayloadAction<Booking>) => {
-      const index = state.bookings.findIndex(booking => booking.id === action.payload.id);
-      if (index !== -1) {
-        state.bookings[index] = action.payload;
-      }
-      const userIndex = state.userBookings.findIndex(booking => booking.id === action.payload.id);
-      if (userIndex !== -1) {
-        state.userBookings[userIndex] = action.payload;
-      }
-    },
-    deleteBooking: (state, action: PayloadAction<string>) => {
-      state.bookings = state.bookings.filter(booking => booking.id !== action.payload);
-      state.userBookings = state.userBookings.filter(booking => booking.id !== action.payload);
-    },
-    setUserBookings: (state, action: PayloadAction<Booking[]>) => {
-      state.userBookings = action.payload;
-    },
-    setSelectedBooking: (state, action: PayloadAction<Booking | null>) => {
-      state.selectedBooking = action.payload;
-    },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-  },
 });
 
-export const {
-  setBookings,
-  addBooking,
-  updateBooking,
-  deleteBooking,
-  setUserBookings,
-  setSelectedBooking,
-  setLoading,
-  setError,
-} = bookingSlice.actions;
+export const { setSelectedBooking, clearError } = bookingSlice.actions;
 
 export default bookingSlice.reducer;

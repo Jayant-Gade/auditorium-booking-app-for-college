@@ -2,11 +2,12 @@
   "expo": {
     "name": "YCCE Auditorium Booking",
     "slug": "ycce-auditorium-booking",
+    "origin": "http://localhost:8081",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "description": "Official auditorium booking app for Yeshwantrao Chavan College of Engineering, Nagpur",
     "primaryColor": "#1565C0",
     "splash": {
@@ -17,6 +18,7 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "scheme": "auditoriumbooker",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ycce.auditorium.booking"
@@ -52,7 +54,9 @@
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-router"
     ]
   }
 }
