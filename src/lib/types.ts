@@ -49,6 +49,7 @@ export interface UserState {
 export interface BookingState {
     bookings: Booking[];
     userBookings: Booking[];
+    calendarBookings: Booking[];
     selectedBooking: Booking | null;
     loading: boolean;
     error: string | null;

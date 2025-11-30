@@ -9,7 +9,7 @@ import * as SecureStore from 'expo-secure-store';
 //
 // DO NOT USE 'localhost' or '127.0.0.1' - your phone cannot access it.
 //
-const YOUR_IP_ADDRESS = '192.168.1.28'; // <--- REPLACE THIS
+const YOUR_IP_ADDRESS = 'localhost'; // <--- REPLACE THIS
 const PORT = 3000; // Or whatever port your backend is on
 export const API_URL = `http://${YOUR_IP_ADDRESS}:${PORT}/api`;
 

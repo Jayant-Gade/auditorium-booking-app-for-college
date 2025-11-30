@@ -35,6 +35,26 @@ export const fetchUserBookingsAPI = async (): Promise<Booking[]> => {
 };
 
 /**
+ * Fetches bookings for a specific month.
+ * @param monthStr Format: "YYYY-MM" (e.g., "2023-11")
+ */
+export const fetchBookingsByMonthAPI = async (monthStr: string): Promise<Booking[]> => {
+    const headers = await getAuthHeaders();
+    // Call the endpoint with the query param
+    const response = await fetch(`${API_URL}/bookings?month=${monthStr}`, {
+        method: 'GET',
+        headers: headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch calendar bookings');
+    }
+
+    return data as Booking[];
+};
+/**
  * Adds a new booking to the "database". (POST /api/bookings)
  */
 export const createBookingAPI = async (

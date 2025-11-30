@@ -87,6 +87,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="calender/index"
+        options={{
+          title: "Calender",
+          headerTitle: "Calender View",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="shield-crown" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         // Name matches the FILE path: app/(tabs)/profile/admin.tsx
         name="profile/admin"
         options={{

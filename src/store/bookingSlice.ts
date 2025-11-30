@@ -6,6 +6,7 @@ import {
     createBookingAPI,
     updateBookingAPI,
     deleteBookingAPI,
+    fetchBookingsByMonthAPI,
 } from '@/lib/api/bookingService';
 
 // --- Asynchronous Thunks ---
@@ -20,7 +21,16 @@ export const fetchAllBookings = createAsyncThunk(
         }
     }
 );
-
+export const fetchCalendarBookings = createAsyncThunk(
+    'bookings/fetchCalendar',
+    async (monthStr: string, { rejectWithValue }) => {
+        try {
+            return await fetchBookingsByMonthAPI(monthStr);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
 export const fetchUserBookings = createAsyncThunk(
     'bookings/fetchUserBookings',
     async (_, { rejectWithValue }) => {
@@ -72,8 +82,9 @@ export const deleteBooking = createAsyncThunk(
 // --- Initial State ---
 
 const initialState: BookingState = {
-    bookings: [], // All bookings (for admin)
-    userBookings: [], // Bookings for the logged-in user
+    bookings: [],
+    userBookings: [],
+    calendarBookings: [], // <--- CRITICAL: Initialize as empty array
     selectedBooking: null,
     loading: false,
     error: null,
@@ -117,7 +128,19 @@ const bookingSlice = createSlice({
             .addCase(fetchUserBookings.rejected, (state, action) => {
                 state.loading = false; state.error = action.payload as string;
             })
-
+            // --- Calendar Bookings ---
+            .addCase(fetchCalendarBookings.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(fetchCalendarBookings.fulfilled, (state, action: PayloadAction<Booking[]>) => {
+                state.loading = false;
+                state.calendarBookings = action.payload;
+            })
+            .addCase(fetchCalendarBookings.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.calendarBookings = []; // Reset on error to prevent undefined
+            })
             // --- Add Booking ---
             .addCase(addBooking.pending, (state) => {
                 state.loading = true;
