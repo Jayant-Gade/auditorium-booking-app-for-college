@@ -2,7 +2,14 @@
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Card, Text, Chip, Surface, Button } from "react-native-paper";
+import {
+  Card,
+  Text,
+  Chip,
+  Surface,
+  Button,
+  IconButton,
+} from "react-native-paper";
 import Icon from "@expo/vector-icons/MaterialCommunityIcons";
 // Assuming theme and types are accessible
 import { theme } from "@/lib/theme";
@@ -14,6 +21,8 @@ interface BookingCardProps {
   conflicts: Booking[];
   onApprove: (booking: Booking) => void;
   onReject: (booking: Booking) => void;
+  onUnapprove: (booking: Booking) => void;
+  onEdit: (booking: Booking) => void;
 }
 
 const getStatusColors = (status: BookingStatus) => {
@@ -34,9 +43,27 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   conflicts,
   onApprove,
   onReject,
+  onUnapprove,
+  onEdit,
 }) => {
   const statusColors = getStatusColors(booking.status);
 
+  // Logic: Is the booking approved AND is the date today or in the future?
+  const isApproved = booking.status === "approved";
+  const eventDate = new Date(booking.date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+  // Can only edit if event is tomorrow or later
+  const isEditableDate = eventDate > today;
+
+  // Can only edit if status is 'pending' or 'approved'
+  const isEditableStatus =
+    booking.status === "pending" || booking.status === "approved";
+
+  // Final visibility flag
+  const canEdit = isEditableDate && isEditableStatus;
+
+  const isUpcoming = eventDate >= today;
   return (
     <Card
       key={booking._id}
@@ -50,18 +77,32 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     >
       <Card.Content>
         <View style={styles.bookingHeader}>
-          <Text variant="titleMedium" style={styles.bookingTitle}>
-            {booking.title}
-          </Text>
-          <Chip
-            mode="flat"
-            style={[styles.statusChip, { backgroundColor: statusColors.bg }]}
-            textStyle={{ color: statusColors.text }}
-          >
-            {booking.status.toUpperCase()}
-          </Chip>
-        </View>
+          <View style={{ flex: 1 }}>
+            <Text variant="titleMedium" style={styles.bookingTitle}>
+              {booking.title}
+            </Text>
+          </View>
 
+          <View style={styles.headerActions}>
+            {/* 3. Add the Edit Button in the header */}
+            {canEdit && (
+              <IconButton
+                icon="pencil-outline"
+                size={20}
+                mode="contained-tonal"
+                onPress={() => onEdit(booking)}
+                style={styles.editButton}
+              />
+            )}
+            <Chip
+              mode="flat"
+              style={[styles.statusChip, { backgroundColor: statusColors.bg }]}
+              textStyle={{ color: statusColors.text }}
+            >
+              {booking.status.toUpperCase()}
+            </Chip>
+          </View>
+        </View>
         {conflicts.length > 0 && (
           <Surface style={styles.conflictBanner}>
             <Icon name="alert" size={20} color="#D84315" />
@@ -182,7 +223,18 @@ export const BookingCard: React.FC<BookingCardProps> = ({
             </Button>
           </View>
         )}
-
+        {isApproved && isUpcoming && (
+          <View style={styles.actionButtons}>
+            <Button
+              mode="contained-tonal"
+              onPress={() => onUnapprove(booking)}
+              style={[styles.actionButton]}
+              icon="undo"
+            >
+              Unapprove
+            </Button>
+          </View>
+        )}
         {booking.adminNotes && (
           <Surface style={styles.adminNotesContainer}>
             <Text variant="labelMedium" style={styles.adminNotesLabel}>
@@ -300,5 +352,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
     gap: 5,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  editButton: {
+    margin: 0,
+    backgroundColor: theme.colors.surfaceVariant,
   },
 });

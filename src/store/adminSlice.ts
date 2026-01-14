@@ -3,7 +3,8 @@ import { AdminState, Booking } from '@/lib/types';
 import {
     fetchAdminData,
     approveBookingAPI,
-    rejectBookingAPI,
+    rejectBookingAPI, unapproveBookingAPI,
+    updateBookingAdminAPI,
 } from '@/lib/api/adminService';
 
 // Type for the dashboard API response
@@ -57,6 +58,28 @@ export const rejectBooking = createAsyncThunk(
     }
 );
 
+// New Unapprove Thunk
+export const unapproveBooking = createAsyncThunk(
+    'admin/unapproveBooking',
+    async (payload: { bookingId: string; adminNotes?: string }, { rejectWithValue }) => {
+        try {
+            return await unapproveBookingAPI(payload);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const updateAdminBooking = createAsyncThunk(
+    'admin/updateBooking',
+    async ({ bookingId, data }: { bookingId: string; data: Partial<Booking> }, { rejectWithValue }) => {
+        try {
+            return await updateBookingAdminAPI(bookingId, data);
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
 // --- Initial State ---
 
 const initialState: AdminState = {
@@ -135,6 +158,30 @@ const adminSlice = createSlice({
                 // Update stats
                 state.statistics.pendingCount -= 1;
                 state.statistics.rejectedCount += 1;
+            })
+            .addCase(unapproveBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
+                const updatedBooking = action.payload; // This is now data.booking
+                state.approvedBookings = state.approvedBookings.filter(b => b._id !== updatedBooking._id);
+                state.pendingBookings.push(updatedBooking);
+
+                // Update stats
+                state.statistics.approvedCount -= 1;
+                state.statistics.pendingCount += 1;
+            })
+            .addCase(updateAdminBooking.fulfilled, (state, action: PayloadAction<Booking>) => {
+                const updated = action.payload;
+
+                // Update the booking in whichever list it belongs to
+                const updateInList = (list: Booking[]) =>
+                    list.map(b => b._id === updated._id ? updated : b);
+
+                if (updated.status === 'pending') {
+                    state.pendingBookings = updateInList(state.pendingBookings);
+                } else if (updated.status === 'approved') {
+                    state.approvedBookings = updateInList(state.approvedBookings);
+                } else {
+                    state.rejectedBookings = updateInList(state.rejectedBookings);
+                }
             })
             .addCase(rejectBooking.rejected, (state, action) => {
                 state.error = action.payload as string;

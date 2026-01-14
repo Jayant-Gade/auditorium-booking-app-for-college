@@ -254,16 +254,18 @@ export default function BookingDetailsScreen() {
                   {booking.organizerEmail}
                 </Text>
                 <View>
-                  {/*<Icon name="phone" size={20} color={theme.colors.primary} />*/}
+                  {/* <Icon name="phone" size={20} color={theme.colors.primary} /> */}
                   <Text
                     variant="bodySmall"
                     style={[
                       styles.organizerText,
                       { color: theme.colors.primary },
                     ]}
-                    onPress={() => handlePhonePress(currentUser?.phone || "")}
+                    onPress={() =>
+                      handlePhonePress(booking.organizerPhone || "")
+                    }
                   >
-                    {currentUser?.phone || "No phone provided"}
+                    {booking.organizerPhone || "No phone provided"}
                   </Text>
                 </View>
               </View>

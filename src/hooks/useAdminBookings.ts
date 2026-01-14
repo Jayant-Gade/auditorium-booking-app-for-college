@@ -8,6 +8,7 @@ import {
     fetchAdminDashboard,
     approveBooking,
     rejectBooking,
+    unapproveBooking, // Add this
 } from '@/store/adminSlice';
 
 export const useAdminBookings = () => {
@@ -31,7 +32,7 @@ export const useAdminBookings = () => {
     // --- Dialog State ---
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [showActionDialog, setShowActionDialog] = useState(false);
-    const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
+    const [actionType, setActionType] = useState<'approve' | 'reject' | 'unapprove'>('approve');
     const [adminNotes, setAdminNotes] = useState('');
 
     // --- Data Fetching ---
@@ -69,29 +70,26 @@ export const useAdminBookings = () => {
     };
 
     // --- Action Handlers ---
-    const handleAction = (booking: Booking, action: 'approve' | 'reject') => {
+    const handleAction = (booking: Booking, action: 'approve' | 'reject' | 'unapprove') => {
         setSelectedBooking(booking);
         setActionType(action);
         setShowActionDialog(true);
-        setAdminNotes(booking.adminNotes || ''); // Pre-fill notes if they exist
+        setAdminNotes(booking.adminNotes || '');
     };
-
     const confirmAction = async () => {
         if (!selectedBooking) return;
 
-        const thunkToDispatch =
-            actionType === 'approve' ? approveBooking : rejectBooking;
+        let thunkToDispatch;
+        if (actionType === 'approve') thunkToDispatch = approveBooking;
+        else if (actionType === 'reject') thunkToDispatch = rejectBooking;
+        else thunkToDispatch = unapproveBooking; // Handle unapprove
 
         try {
-            // Dispatch the thunk with the bookingId (which is _id) and notes
             await dispatch(
                 thunkToDispatch({ bookingId: selectedBooking._id, adminNotes })
             ).unwrap();
 
-            Alert.alert(
-                'Success',
-                `Booking has been ${actionType}d successfully!`
-            );
+            Alert.alert('Success', `Booking moved to ${actionType === 'unapprove' ? 'pending' : actionType + 'ed'} successfully!`);
         } catch (error: any) {
             Alert.alert('Action Failed', error.message || 'Could not process request');
         } finally {
@@ -100,7 +98,6 @@ export const useAdminBookings = () => {
             setAdminNotes('');
         }
     };
-
     return {
         isAdmin,
         stats: statistics, // Pass stats from Redux

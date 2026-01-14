@@ -1,10 +1,9 @@
 // app/(tabs)/profile/admin.tsx
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react"; // Added useMemo for performance
 import { View, StyleSheet } from "react-native";
 import { Text, SegmentedButtons } from "react-native-paper";
 
-// Adjust paths as needed
 import { useAdminBookings } from "@/hooks/useAdminBookings";
 import { ScreenContainer } from "@/components/layout/ScreenContainer";
 import { AccessDenied } from "@/components/common/AccessDenied";
@@ -14,6 +13,7 @@ import { BookingCard } from "@/components/admin/BookingCard";
 import { ActionDialog } from "@/components/admin/ActionDialog";
 import { theme } from "@/lib/theme";
 import { Booking } from "@/lib/types";
+import { RequestEdit } from "@/components/admin/RequestEdit";
 
 export default function AdminScreen() {
   const [activeTab, setActiveTab] = useState("pending");
@@ -31,11 +31,37 @@ export default function AdminScreen() {
     setAdminNotes,
   } = useAdminBookings();
 
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+
   if (!isAdmin) {
     return <AccessDenied />;
   }
 
-  const currentBookings = getCurrentBookings(activeTab);
+  const handleEditPress = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setShowEditDialog(true);
+  };
+
+  // --- Sorting Logic ---
+  const sortedBookings = useMemo(() => {
+    const rawBookings = getCurrentBookings(activeTab);
+
+    return [...rawBookings].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+
+      // Primary Sort: Date
+      if (dateA !== dateB) {
+        return activeTab === "approved"
+          ? dateB - dateA // Latest to Oldest
+          : dateA - dateB; // Oldest to Latest (Pending/Rejected)
+      }
+
+      // Secondary Sort: Start Time (Always earliest time first for the same day)
+      return a.startTime.localeCompare(b.startTime);
+    });
+  }, [activeTab, getCurrentBookings]);
 
   return (
     <ScreenContainer>
@@ -56,7 +82,7 @@ export default function AdminScreen() {
         </Text>
         <View style={styles.statsGrid}>
           <StatCard
-            label="Total Bookings"
+            label="Total"
             value={stats.totalBookings}
             iconName="calendar-multiple"
             color={theme.colors.primary}
@@ -111,25 +137,36 @@ export default function AdminScreen() {
 
       {/* Bookings List */}
       <View style={styles.bookingsSection}>
-        {currentBookings.length === 0 ? (
+        {sortedBookings.length === 0 ? (
           <EmptyState
             title="No bookings!"
             message={`No ${activeTab} bookings found`}
           />
         ) : (
-          currentBookings.map((booking: Booking) => (
+          sortedBookings.map((booking: Booking) => (
             <BookingCard
               key={booking._id}
               booking={booking}
               conflicts={checkConflicts(booking)}
               onApprove={() => handleAction(booking, "approve")}
               onReject={() => handleAction(booking, "reject")}
+              onUnapprove={() => handleAction(booking, "unapprove")}
+              onEdit={() => handleEditPress(booking)}
             />
           ))
         )}
       </View>
 
-      {/* Action Dialog */}
+      {/* Dialogs */}
+      <RequestEdit
+        visible={showEditDialog}
+        booking={selectedBooking}
+        onDismiss={() => {
+          setShowEditDialog(false);
+          setSelectedBooking(null);
+        }}
+      />
+
       <ActionDialog
         visible={showActionDialog}
         onDismiss={() => setShowActionDialog(false)}
@@ -143,25 +180,15 @@ export default function AdminScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Only styles for the screen layout remain
   header: {
     padding: 20,
     backgroundColor: theme.colors.primary,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  title: {
-    color: theme.colors.surface,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  subtitle: {
-    color: theme.colors.surface,
-    opacity: 0.9,
-  },
-  statsSection: {
-    padding: 20,
-  },
+  title: { color: theme.colors.surface, fontWeight: "bold", marginBottom: 5 },
+  subtitle: { color: theme.colors.surface, opacity: 0.9 },
+  statsSection: { padding: 20 },
   sectionTitle: {
     marginBottom: 15,
     fontWeight: "bold",
@@ -172,11 +199,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
   },
-  tabsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 15,
-  },
-  bookingsSection: {
-    paddingHorizontal: 20,
-  },
+  tabsSection: { paddingHorizontal: 20, marginBottom: 15 },
+  bookingsSection: { paddingHorizontal: 20, paddingBottom: 20 },
 });
