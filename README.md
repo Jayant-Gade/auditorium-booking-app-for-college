@@ -182,28 +182,91 @@ Create these assets for Play Store:
 ```
 ycce-auditorium-booking/
 ├── src/
-│   ├── screens/           # App screens
-│   │   ├── HomeScreen.tsx
-│   │   ├── BookingScreen.tsx
-│   │   ├── BookingListScreen.tsx
-│   │   ├── AdminScreen.tsx
-│   │   ├── ProfileScreen.tsx
-│   │   ├── LoginScreen.tsx
-│   │   └── index.ts
-│   ├── store/            # Redux store and slices
-│   │   ├── store.ts
-│   │   ├── bookingSlice.ts
-│   │   ├── userSlice.ts
-│   │   ├── adminSlice.ts
-│   │   └── index.ts
-│   ├── theme/            # App theming
-│   │   └── theme.ts
-│   └── components/       # Reusable components
-├── assets/              # Images, icons, fonts
-├── App.tsx             # Main app component
-├── app.json           # Expo configuration
-├── package.json       # Dependencies
-└── README.md         # This file
+│   ├── app/                                  <-- Main Router Directory
+│   │   ├── (auth)/                           <-- Authentication Group
+│   │   │   ├── _layout.tsx
+│   │   │   ├── login.tsx
+│   │   │   └── register.tsx
+│   │   │
+│   │   ├── (tabs)/                           <-- Main App Tabs
+│   │   │   ├── _layout.tsx
+│   │   │   ├── bookings/
+│   │   │   │   └── index.tsx                 <-- My Bookings List
+│   │   │   ├── calendar/
+│   │   │   │   └── index.tsx                 <-- Calendar View
+│   │   │   ├── home/
+│   │   │   │   ├── book.tsx                  <-- Booking Form
+│   │   │   │   └── index.tsx                 <-- Home Dashboard
+│   │   │   └── profile/
+│   │   │       ├── admin.tsx                 <-- Admin Panel
+│   │   │       └── index.tsx                 <-- User Profile
+│   │   │
+│   │   ├── _layout.tsx                       <-- ROOT LAYOUT (Providers)
+│   │   ├── booking-details.tsx               <-- Detail Screen (Global)
+│   │   └── index.tsx                         <-- Redirect Logic
+│   │
+│   ├── components/                           <-- UI Components
+│   │   ├── admin/
+│   │   │   ├── ActionDialog.tsx
+│   │   │   ├── BookingCard.tsx
+│   │   │   └── StatCard.tsx
+│   │   ├── auth/
+│   │   │   ├── AuthLayout.tsx
+│   │   │   └── RoleSelectionDialog.tsx
+│   │   ├── bookings/
+│   │   │   ├── DatePickerDialog.tsx
+│   │   │   ├── TimePickerDialog.tsx
+│   │   │   └── UserBookingCard.tsx
+│   │   ├── common/
+│   │   │   ├── AccessDenied.tsx
+│   │   │   ├── ConfirmationDialog.tsx
+│   │   │   ├── EmptyCard.tsx
+│   │   │   └── EmptyState.tsx
+│   │   ├── home/
+│   │   │   ├── QuickActions.tsx
+│   │   │   ├── StatCard.tsx
+│   │   │   ├── TodayEventCard.tsx
+│   │   │   ├── UpcomingEventCard.tsx
+│   │   │   └── WelcomeHeader.tsx
+│   │   ├── layout/
+│   │   │   ├── ScreenContainer.tsx
+│   │   │   └── ViewContainer.tsx
+│   │   └── profile/
+│   │       ├── ProfileHeader.tsx
+│   │       ├── ProfileInfoCard.tsx
+│   │       ├── ProfileStatCard.tsx
+│   │       ├── ProfileStats.tsx
+│   │       └── QuickActionsCard.tsx
+│   │
+│   ├── hooks/                                <-- Logic Hooks
+│   │   ├── useAdminBookings.ts
+│   │   ├── useAuth.ts
+│   │   ├── useBookingForm.ts
+│   │   ├── useHomeDashboard.ts
+│   │   ├── useProfile.ts
+│   │   └── useUserBookings.ts
+│   │
+│   ├── lib/                                  <-- Config & Helpers
+│   │   ├── api/
+│   │   │   ├── adminService.ts
+│   │   │   ├── apiConfig.ts
+│   │   │   ├── authService.ts
+│   │   │   └── bookingService.ts
+│   │   ├── constants.ts
+│   │   ├── theme.ts
+│   │   └── types.ts
+│   │
+│   └── store/                                <-- Redux State
+│       ├── adminSlice.ts
+│       ├── bookingSlice.ts
+│       ├── hooks.ts
+│       ├── store.ts
+│       └── userSlice.ts
+│
+├── assets/
+├── app.json
+├── package.json
+└── tsconfig.json
 ```
 
 ## 🔧 Configuration
@@ -245,12 +308,12 @@ npm run test:e2e
 ```
 
 ### Manual Testing Checklist
-- [ ] Login/Registration flow
-- [ ] Booking creation and submission
-- [ ] Admin approval/rejection workflow
-- [ ] Conflict detection
-- [ ] Navigation between screens
-- [ ] Data persistence
+- [x] Login/Registration flow
+- [x] Booking creation and submission
+- [x] Admin approval/rejection workflow
+- [x] Conflict detection
+- [x] Navigation between screens
+- [x] Data persistence
 - [ ] Error handling
 
 ## 🤝 Contributing
