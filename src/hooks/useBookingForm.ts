@@ -7,7 +7,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addBooking } from '@/store/bookingSlice';
 import { RootState, NewBookingData } from '@/lib/types';
 
-// Form state (equipmentNeeded removed)
 export interface BookingFormData {
   title: string;
   description: string;
@@ -30,28 +29,21 @@ export const useBookingForm = () => {
   const dispatch = useAppDispatch();
   const { currentUser } = useAppSelector((state: RootState) => state.user);
 
-  const [formData, setFormData] =
-    useState<BookingFormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<BookingFormData>(INITIAL_FORM_DATA);
   const [loading, setLoading] = useState(false);
 
-  // --- NEW Equipment State ---
+  // --- Equipment State ---
   const [needsAudio, setNeedsAudio] = useState(false);
   const [needsVideo, setNeedsVideo] = useState(false);
   const [needsAC, setNeedsAC] = useState(false);
-  // --- END NEW Equipment State ---
+  // Changed from boolean to string to store the actual text
+  const [otherNeeds, setOtherNeeds] = useState("");
 
-  // Dialog visibility state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [timePickerType, setTimePickerType] = useState<'start' | 'end'>('start');
-  // showEquipmentDialog is no longer needed
 
-  // --- Form Handlers ---
-
-  const handleValueChange = (
-    field: keyof BookingFormData,
-    value: string
-  ) => {
+  const handleValueChange = (field: keyof BookingFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -68,10 +60,6 @@ export const useBookingForm = () => {
     setShowTimePicker(false);
   };
 
-  // toggleEquipment and setShowEquipmentDialog are no longer needed
-
-  // --- Submission ---
-
   const handleSubmit = async () => {
     const { title, date, startTime, endTime, expectedAttendees } = formData;
 
@@ -80,55 +68,48 @@ export const useBookingForm = () => {
       return;
     }
 
-    if (
-      parseInt(startTime.replace(':', '')) >=
-      parseInt(endTime.replace(':', ''))
-    ) {
-      Alert.alert('Error', 'End time must be after start time');
+    // Basic time validation
+    if (startTime === endTime) {
+      Alert.alert('Error', 'Start and End time cannot be the same');
       return;
     }
 
     setLoading(true);
 
-    // --- NEW: Build equipmentNeeded array ---
+    // --- Build equipmentNeeded array ---
     const equipmentNeeded: string[] = [];
     if (needsAudio) equipmentNeeded.push('Audio System');
     if (needsVideo) equipmentNeeded.push('Video/Projector');
     if (needsAC) equipmentNeeded.push('Air Conditioning');
-    // --- END NEW ---
 
-    // Prepare data for the API
+    // Add custom text if it's not empty
+    if (otherNeeds.trim().length > 0) {
+      equipmentNeeded.push(otherNeeds.trim());
+    }
+
     const newBookingData: NewBookingData = {
       ...formData,
       expectedAttendees: parseInt(expectedAttendees) || 0,
-      equipmentNeeded: equipmentNeeded, // Pass the built array
+      equipmentNeeded: equipmentNeeded,
     };
 
     try {
       await dispatch(addBooking(newBookingData)).unwrap();
 
-      setFormData(INITIAL_FORM_DATA); // Reset form
-      // Reset equipment
+      // Reset everything
+      setFormData(INITIAL_FORM_DATA);
       setNeedsAudio(false);
       setNeedsVideo(false);
       setNeedsAC(false);
+      setOtherNeeds("");
 
       Alert.alert(
         'Success',
         'Your booking request has been submitted successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.push('/(tabs)/bookings'),
-          },
-        ]
+        [{ text: 'OK', onPress: () => router.push('/(tabs)/bookings') }]
       );
     } catch (error: any) {
-      Alert.alert(
-        'Submission Failed',
-        error.message || 'Could not create booking. Please check for time conflicts.'
-      );
-
+      Alert.alert('Submission Failed', error.message || 'Error creating booking.');
     } finally {
       setLoading(false);
     }
@@ -138,24 +119,21 @@ export const useBookingForm = () => {
     currentUser,
     formData,
     loading,
-
-    // Form handlers
     handleValueChange,
     handleSubmit,
-
-    // Equipment state
+    // Equipment exports
     needsAudio,
     setNeedsAudio,
     needsVideo,
     setNeedsVideo,
     needsAC,
     setNeedsAC,
-
-    // Dialog state and handlers
+    otherNeeds,
+    setOtherNeeds,
+    // Picker exports
     showDatePicker,
     setShowDatePicker,
     handleDateSelect,
-
     showTimePicker,
     setShowTimePicker,
     timePickerType,

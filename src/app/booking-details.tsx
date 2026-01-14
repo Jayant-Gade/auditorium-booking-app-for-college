@@ -18,6 +18,8 @@ import { deleteBooking } from "@/store/bookingSlice";
 import { theme } from "@/lib/theme";
 import { Booking } from "@/lib/types";
 import { ViewContainer } from "@/components/layout/ViewContainer";
+import { Linking, Platform } from "react-native";
+import * as Clipboard from "expo-clipboard";
 
 export default function BookingDetailsScreen() {
   const params = useLocalSearchParams();
@@ -82,6 +84,53 @@ export default function BookingDetailsScreen() {
   const isOwner = currentUser?.userId === booking.organizerUserId;
   const isPending = booking.status === "pending";
 
+  const handlePhonePress = (phoneNumber: string) => {
+    Alert.alert("Contact Organizer", phoneNumber, [
+      {
+        text: "Call",
+        onPress: () => Linking.openURL(`tel:${phoneNumber}`),
+      },
+      {
+        text: "Copy Number",
+        onPress: async () => {
+          await Clipboard.setStringAsync(phoneNumber);
+          // Optional: Show a small toast or alert
+          Alert.alert("Copied", "Phone number copied to clipboard.");
+        },
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
+  };
+  const handleEmailPress = (email: string, eventTitle?: string) => {
+    const subject = eventTitle
+      ? `Inquiry regarding: ${eventTitle}`
+      : "Booking Inquiry";
+
+    Alert.alert("Contact Organizer", email, [
+      {
+        text: "Send Email",
+        onPress: () =>
+          Linking.openURL(
+            `mailto:${email}?subject=${encodeURIComponent(subject)}`
+          ),
+      },
+      {
+        text: "Copy Email",
+        onPress: async () => {
+          await Clipboard.setStringAsync(email);
+          // Simple feedback
+          Alert.alert("Copied", "Email address copied to clipboard.");
+        },
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
+  };
   return (
     <ScrollView style={styles.container}>
       {/* Header Section */}
@@ -186,25 +235,40 @@ export default function BookingDetailsScreen() {
 
             <View style={styles.rowNoIcon}>
               <View style={{ flex: 1 }}>
-                <Text variant="labelMedium" style={styles.label}>
+                <Text variant="labelLarge" style={styles.label}>
                   Organizer
                 </Text>
                 <Text variant="bodyMedium">{booking.organizerName}</Text>
                 <Text
                   variant="bodySmall"
-                  style={{ color: theme.colors.outline }}
+                  style={[
+                    {
+                      color: theme.colors.primary,
+                      textDecorationLine: "underline",
+                    }, // Changed color to primary to show it's a link
+                  ]}
+                  onPress={() =>
+                    handleEmailPress(booking.organizerEmail, booking.title)
+                  }
                 >
                   {booking.organizerEmail}
                 </Text>
-                <Text
-                  variant="bodySmall"
-                  style={{ color: theme.colors.outline }}
-                >
-                  {booking.organizerPhone}
-                </Text>
+                <View>
+                  {/*<Icon name="phone" size={20} color={theme.colors.primary} />*/}
+                  <Text
+                    variant="bodySmall"
+                    style={[
+                      styles.organizerText,
+                      { color: theme.colors.primary },
+                    ]}
+                    onPress={() => handlePhonePress(currentUser?.phone || "")}
+                  >
+                    {currentUser?.phone || "No phone provided"}
+                  </Text>
+                </View>
               </View>
               <View style={{ flex: 1 }}>
-                <Text variant="labelMedium" style={styles.label}>
+                <Text variant="labelLarge" style={styles.label}>
                   Attendees
                 </Text>
                 <Text variant="bodyMedium">
@@ -216,17 +280,48 @@ export default function BookingDetailsScreen() {
             {booking.equipmentNeeded && booking.equipmentNeeded.length > 0 && (
               <>
                 <Text
-                  variant="labelMedium"
-                  style={[styles.label, { marginTop: 15 }]}
+                  variant="labelLarge"
+                  style={[styles.label, { marginTop: 15, marginBottom: 8 }]}
                 >
                   Equipment Required
                 </Text>
+
                 <View style={styles.equipmentRow}>
-                  {booking.equipmentNeeded.map((item) => (
-                    <Chip key={item} compact style={styles.eqChip}>
-                      {item}
-                    </Chip>
-                  ))}
+                  {booking.equipmentNeeded.map((item, index) => {
+                    // Define your standard items
+                    const standardItems = [
+                      "Audio System",
+                      "Video/Projector",
+                      "Air Conditioning",
+                    ];
+                    const isStandard = standardItems.includes(item);
+
+                    if (isStandard) {
+                      // Render standard items as compact Chips
+                      return (
+                        <Chip key={item} compact style={styles.eqChip}>
+                          {item}
+                        </Chip>
+                      );
+                    } else {
+                      // Render custom requirements as a full-width Surface or View with text wrap
+                      return (
+                        <View key={index} style={styles.customRequirementBox}>
+                          {/*<Icon
+                            name="plus-box-outline"
+                            size={16}
+                            color={theme.colors.primary}
+                          />*/}
+                          <Text
+                            variant="bodyMedium"
+                            style={styles.customRequirementText}
+                          >
+                            {item}
+                          </Text>
+                        </View>
+                      );
+                    }
+                  })}
                 </View>
               </>
             )}
@@ -326,6 +421,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 2,
   },
+  equipmentRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  eqChip: {
+    marginBottom: 4,
+  },
+  customRequirementBox: {
+    width: "100%", // Forces it to its own line/full width
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: theme.colors.surfaceVariant,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 5,
+  },
+  customRequirementText: {
+    marginLeft: 8,
+    flex: 1, // Crucial: This forces the text to wrap instead of pushing out of bounds
+    flexWrap: "wrap",
+    color: theme.colors.onSurfaceVariant,
+  },
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -353,14 +471,9 @@ const styles = StyleSheet.create({
   mb: {
     marginBottom: 15,
   },
-  equipmentRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 5,
-  },
-  eqChip: {
-    backgroundColor: theme.colors.surfaceVariant,
+  organizerText: {
+    marginLeft: 0,
+    textDecorationLine: "underline", // Optional: makes it look like a link
   },
   deleteButton: {
     marginTop: 10,

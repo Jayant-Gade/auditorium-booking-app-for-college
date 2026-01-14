@@ -1,5 +1,3 @@
-// app/(tabs)/home/book.tsx
-
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import {
@@ -7,7 +5,6 @@ import {
   TextInput,
   Button,
   Card,
-  Chip,
   Surface,
   Checkbox,
 } from "react-native-paper";
@@ -20,7 +17,6 @@ import { ScreenContainer } from "@/components/layout/ScreenContainer";
 import { DatePickerDialog } from "@/components/bookings/DatePickerDialog";
 import { TimePickerDialog } from "@/components/bookings/TimePickerDialog";
 
-// This component replaces the original BookingScreen
 export default function BookBookingScreen() {
   const {
     currentUser,
@@ -33,6 +29,8 @@ export default function BookBookingScreen() {
     setNeedsVideo,
     needsAC,
     setNeedsAC,
+    otherNeeds, // Added this
+    setOtherNeeds, // Added this
     handleSubmit,
     showDatePicker,
     setShowDatePicker,
@@ -121,7 +119,7 @@ export default function BookBookingScreen() {
                   setShowTimePicker(true);
                 }}
                 style={[styles.timeButton, { marginRight: 10 }]}
-                icon="clock"
+                icon="clock-outline"
               >
                 {formData.startTime || "Start Time *"}
               </Button>
@@ -133,7 +131,7 @@ export default function BookBookingScreen() {
                   setShowTimePicker(true);
                 }}
                 style={styles.timeButton}
-                icon="clock"
+                icon="clock-outline"
               >
                 {formData.endTime || "End Time *"}
               </Button>
@@ -164,12 +162,25 @@ export default function BookBookingScreen() {
               onPress={() => setNeedsAC(!needsAC)}
               style={styles.checkboxItem}
             />
+
+            {/* Added Custom Requirements Input */}
+            <TextInput
+              label="Other Requirements"
+              value={otherNeeds}
+              onChangeText={setOtherNeeds}
+              mode="outlined"
+              multiline
+              numberOfLines={6}
+              placeholder="e.g. Extra chairs, Whiteboard..."
+              style={[styles.input, { marginTop: 0 }]}
+              /*left={<TextInput.Icon icon="plus-box" />}*/
+            />
           </View>
 
           {/* Organizer Information */}
           <View style={styles.section}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Organizer Information
+              Organizer Information (You)
             </Text>
             <Surface style={styles.organizerInfo}>
               <View style={styles.organizerRow}>
@@ -223,7 +234,6 @@ export default function BookBookingScreen() {
   );
 }
 
-// These are only the styles needed for the screen layout
 const styles = StyleSheet.create({
   header: {
     padding: 20,
@@ -232,7 +242,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   checkboxItem: {
-    paddingHorizontal: 0, // Align with TextInputs
+    paddingHorizontal: 0,
     paddingVertical: 0,
   },
   title: {
@@ -271,25 +281,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     paddingVertical: 8,
-  },
-  equipmentHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  equipmentChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    minHeight: 32, // Ensure area doesn't collapse
-  },
-  equipmentChip: {
-    marginBottom: 5,
-  },
-  noEquipmentText: {
-    color: theme.colors.outline,
-    fontStyle: "italic",
   },
   organizerInfo: {
     padding: 15,

@@ -11,7 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 //
 const YOUR_IP_ADDRESS = 'localhost'; // <--- REPLACE THIS
 const PORT = 3000; // Or whatever port your backend is on
-export const API_URL = `http://${YOUR_IP_ADDRESS}:${PORT}/api`;
+export const API_URL = `https://credent-yi-preciously.ngrok-free.dev/api`;
 
 const TOKEN_KEY = 'userAuthToken';
 

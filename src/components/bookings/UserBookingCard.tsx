@@ -123,7 +123,7 @@ export const UserBookingCard: React.FC<UserBookingCardProps> = ({
                 ))}
                 {booking.equipmentNeeded.length > 3 && (
                   <Chip style={styles.equipmentChip} compact>
-                    +{booking.equipmentNeeded.length - 3} more
+                    + Other
                   </Chip>
                 )}
               </View>

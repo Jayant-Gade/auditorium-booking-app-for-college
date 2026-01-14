@@ -106,16 +106,58 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         )}
 
         {booking.equipmentNeeded.length > 0 && (
-          <View style={styles.equipmentSection}>
-            <Text variant="labelMedium" style={styles.equipmentLabel}>
-              Equipment Required:
-            </Text>
-            <View style={styles.equipmentChips}>
-              {booking.equipmentNeeded.map((equipment) => (
-                <Chip key={equipment} style={styles.equipmentChip} compact>
-                  {equipment}
-                </Chip>
-              ))}
+          <View style={styles.equipmentRow}>
+            <Icon name="tools" size={16} color={theme.colors.outline} />
+            <View style={styles.equipmentList}>
+              {(() => {
+                // 1. Define your default items exactly as they appear in state
+                const defaultItems = [
+                  "Audio System",
+                  "Video/Projector",
+                  "Air Conditioning",
+                ];
+
+                // 2. Separate the user's selection into 'Defaults' and 'Custom'
+                const selectedDefaults = booking.equipmentNeeded.filter(
+                  (item) => defaultItems.includes(item)
+                );
+                const hasCustom = booking.equipmentNeeded.some(
+                  (item) => !defaultItems.includes(item)
+                );
+
+                return (
+                  <>
+                    {/* Render the specific chips for default items */}
+                    {selectedDefaults.map((equipment) => (
+                      <Chip
+                        key={equipment}
+                        style={styles.equipmentChip}
+                        compact
+                      >
+                        {equipment}
+                      </Chip>
+                    ))}
+
+                    {/* If any item exists that is NOT in the default list, show + Other */}
+                    {hasCustom && (
+                      <Chip
+                        style={[styles.equipmentChip]}
+                        compact
+                        icon="plus"
+                        onPress={() => {
+                          // Find the custom text (it's the item not in defaultItems)
+                          const otherText = booking.equipmentNeeded.find(
+                            (item) => !defaultItems.includes(item)
+                          );
+                          alert(`Other Requirements: ${otherText}`);
+                        }}
+                      >
+                        Other
+                      </Chip>
+                    )}
+                  </>
+                );
+              })()}
             </View>
           </View>
         )}
@@ -246,5 +288,17 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: "bold",
     marginBottom: 5,
+  },
+  equipmentRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 5,
+  },
+  equipmentList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginLeft: 10,
+    flex: 1,
+    gap: 5,
   },
 });

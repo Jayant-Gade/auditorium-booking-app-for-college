@@ -15,9 +15,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#1565C0"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "scheme": "auditoriumbooker",
     "ios": {
       "supportsTablet": true,
@@ -42,11 +40,7 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "extra": {
-      "eas": {
-        "projectId": "ycce-auditorium-booking"
-      }
-    },
+
     "plugins": [
       [
         "expo-notifications",
